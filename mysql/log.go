@@ -3,7 +3,8 @@ package mysql
 import (
 	"database/sql"
 	"fmt"
-	"askc/tool/dbvm/manager"
+
+	"dbvm/manager"
 )
 
 // ListLogs 获取版本更新历史

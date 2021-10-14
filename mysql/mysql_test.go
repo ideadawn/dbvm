@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"askc/tool/dbvm/manager"
+	"dbvm/manager"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/VividCortex/mysqlerr"

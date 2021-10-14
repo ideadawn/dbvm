@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"askc/tool/dbvm/manager"
+	"dbvm/manager"
 
 	driver "github.com/go-sql-driver/mysql"
 )

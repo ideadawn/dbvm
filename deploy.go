@@ -1,7 +1,7 @@
 package main
 
 import (
-	"askc/tool/dbvm/manager"
+	"dbvm/manager"
 
 	flags "github.com/jessevdk/go-flags"
 )

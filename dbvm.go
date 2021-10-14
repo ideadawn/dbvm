@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	_ "askc/tool/dbvm/mysql"
+	_ "dbvm/mysql"
 
 	flags "github.com/jessevdk/go-flags"
 )

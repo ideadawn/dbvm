@@ -3,7 +3,7 @@ package mysql
 import (
 	"database/sql"
 
-	"askc/tool/dbvm/manager"
+	"dbvm/manager"
 
 	_ "github.com/go-sql-driver/mysql"
 )
