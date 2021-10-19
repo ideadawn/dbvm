@@ -1,4 +1,4 @@
-module dbvm
+module github.com/ideadawn/dbvm
 
 go 1.16
 
