@@ -6,11 +6,10 @@ import (
 	"testing"
 	"time"
 
-	"dbvm/manager"
-
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
 	"github.com/VividCortex/mysqlerr"
 	driver "github.com/go-sql-driver/mysql"
+	"github.com/ideadawn/dbvm/manager"
 	"github.com/nbio/st"
 )
 

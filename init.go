@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	"dbvm/manager"
-
+	"github.com/ideadawn/dbvm/manager"
 	flags "github.com/jessevdk/go-flags"
 )
 

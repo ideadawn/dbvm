@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"dbvm/manager"
-
 	driver "github.com/go-sql-driver/mysql"
+	"github.com/ideadawn/dbvm/manager"
 )
 
 // Verify 检查版本部署

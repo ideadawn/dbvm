@@ -3,9 +3,8 @@ package mysql
 import (
 	"database/sql"
 
-	"dbvm/manager"
-
 	_ "github.com/go-sql-driver/mysql"
+	"github.com/ideadawn/dbvm/manager"
 )
 
 func init() {

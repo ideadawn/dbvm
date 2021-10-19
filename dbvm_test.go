@@ -4,8 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"askc/tool/dbvm/manager"
-
+	"github.com/ideadawn/dbvm/manager"
 	"github.com/nbio/st"
 )
 

@@ -4,8 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	_ "dbvm/mysql"
-
+	_ "github.com/ideadawn/dbvm/mysql"
 	flags "github.com/jessevdk/go-flags"
 )
 

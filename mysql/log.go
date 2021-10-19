@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"dbvm/manager"
+	"github.com/ideadawn/dbvm/manager"
 )
 
 // ListLogs 获取版本更新历史

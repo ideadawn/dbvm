@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"dbvm/manager"
-
 	driver "github.com/go-sql-driver/mysql"
+	"github.com/ideadawn/dbvm/manager"
 )
 
 func inErrCodes(code uint16, arr []uint16) bool {
