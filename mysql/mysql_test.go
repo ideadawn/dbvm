@@ -10,12 +10,12 @@ import (
 	"github.com/VividCortex/mysqlerr"
 	driver "github.com/go-sql-driver/mysql"
 	"github.com/ideadawn/dbvm/manager"
-	"github.com/nbio/st"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_MySQL(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 	my := New()
 	my.db = db
 	my.table = `dbvm`
@@ -77,25 +77,25 @@ func Test_MySQL(t *testing.T) {
 	mock.ExpectClose()
 
 	err = my.Initiate(my.table)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	logs, err := my.ListLogs()
-	st.Assert(t, err, nil)
-	st.Assert(t, logs[0].ID, int64(1))
+	assert.Equal(t, err, nil)
+	assert.Equal(t, logs[0].ID, int64(1))
 
 	err = tmpDeployFile(plan.Deploy)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 	err = tmpRevertFile(plan.Revert)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 	err = tmpVerifyFile(plan.Verify)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	err = my.Deploy(plan)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 	err = my.Verify(plan)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 	err = my.Revert(plan)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	my.Close()
 

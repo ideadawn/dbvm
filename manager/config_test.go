@@ -3,11 +3,11 @@ package manager
 import (
 	"testing"
 
-	"github.com/nbio/st"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_ParseConfig(t *testing.T) {
-	conf, err := ParseConfig(`../sqitch`)
-	st.Assert(t, err, nil)
-	st.Assert(t, conf.Engine, `mysql`)
+	conf, err := ParseConfig(`../testdata`)
+	assert.Equal(t, err, nil)
+	assert.Equal(t, conf.Engine, `mysql`)
 }

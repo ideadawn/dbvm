@@ -1,0 +1,7 @@
+engine: mysql
+fromTable: sqitch_dbcm_logs
+logsTable: dbvm_logs
+
+rule:
+  notNull: true
+  default: true

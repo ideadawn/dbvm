@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/nbio/st"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_AddPlan(t *testing.T) {
@@ -31,7 +31,7 @@ func Test_AddPlan(t *testing.T) {
 		},
 	}
 	err = InitProject(project)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	plan := &Plan{
 		Name:     `v1.6.0`,
@@ -42,5 +42,5 @@ func Test_AddPlan(t *testing.T) {
 		Note:     `For Test`,
 	}
 	err = AddPlan(dir, plan, project.Project, project.Engine)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 }

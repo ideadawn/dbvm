@@ -4,7 +4,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/nbio/st"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_Help(t *testing.T) {
@@ -27,9 +27,9 @@ func Test_Help(t *testing.T) {
 	}
 
 	err := cmdHelp()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	os.Args = append(os.Args, `not_exists`)
 	err = cmdHelp()
-	st.Assert(t, err, errCmdNotFound)
+	assert.Equal(t, err, errCmdNotFound)
 }

@@ -5,7 +5,7 @@ import (
 	"testing"
 
 	"github.com/ideadawn/dbvm/manager"
-	"github.com/nbio/st"
+	"github.com/stretchr/testify/assert"
 )
 
 type myEngine struct{}
@@ -65,7 +65,7 @@ func Test_DBVM(t *testing.T) {
 		`--set`, `logsTable=logs`,
 	}
 	err = cmdInit()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	os.Args = []string{
 		`dbvm`,
@@ -76,7 +76,7 @@ func Test_DBVM(t *testing.T) {
 		`--user`, `test`,
 	}
 	err = cmdAdd()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	os.Args = []string{
 		`dbvm`,
@@ -86,7 +86,7 @@ func Test_DBVM(t *testing.T) {
 		`--to`, `latest`,
 	}
 	err = cmdDeploy()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	manager.RegisterEngine(`mysql`, &myEngine2{})
 
@@ -98,7 +98,7 @@ func Test_DBVM(t *testing.T) {
 		`--from`, `v1.0.0`,
 	}
 	err = cmdVerify()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	os.Args = []string{
 		`dbvm`,
@@ -108,7 +108,7 @@ func Test_DBVM(t *testing.T) {
 		`--to`, `v1.0.0`,
 	}
 	err = cmdVerify()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	os.Args = []string{
 		`dbvm`,
@@ -119,7 +119,7 @@ func Test_DBVM(t *testing.T) {
 		`--to`, `v1.0.0`,
 	}
 	err = cmdVerify()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	os.Args = []string{
 		`dbvm`,
@@ -129,5 +129,5 @@ func Test_DBVM(t *testing.T) {
 		`--to`, `v1.0.0`,
 	}
 	err = cmdRevert()
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 }

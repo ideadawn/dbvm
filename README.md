@@ -1,12 +1,8 @@
-#### A little database tool for version control
+#### A little database tool for version management
 
-> It's very like sqitch, because I imitate it.
-> If it's not allowed, give me a message, I'll destroy this project.
->
-> Mail To: 29098217@qq.com
+> It's designed to deploy/revert database from any version to any version.
+> It's designed to deploy/revert again and again.
 
 #### How to use
 
-> It's really easy, look the help page after building.
->
 > # dbvm help

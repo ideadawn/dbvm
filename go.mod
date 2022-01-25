@@ -7,7 +7,6 @@ require (
 	github.com/VividCortex/mysqlerr v1.0.0
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/jessevdk/go-flags v1.5.0
-	github.com/nbio/st v0.0.0-20140626010706-e9e8d9816f32
-	github.com/stretchr/testify v1.7.0 // indirect
-	gopkg.in/ini.v1 v1.63.2
+	github.com/stretchr/testify v1.7.0
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )

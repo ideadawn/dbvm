@@ -3,7 +3,7 @@ package manager
 import (
 	"testing"
 
-	"github.com/nbio/st"
+	"github.com/stretchr/testify/assert"
 )
 
 type myEngine struct{}
@@ -36,14 +36,14 @@ func Test_Manager(t *testing.T) {
 	RegisterEngine(`mysql`, &myEngine{})
 
 	mgr, err := New(`../sqitch`, `db:mysql://root:qwe123@127.0.0.1:3306/test?charset=utf8mb4`)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	_ = mgr.GetLogsTable()
 	err = mgr.Deploy(`latest`)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	err = mgr.Revert(`v1.7.0`)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	mgr.Close()
 }

@@ -1,26 +1,35 @@
 package manager
 
 import (
+	"os"
 	"path/filepath"
 
-	ini "gopkg.in/ini.v1"
+	"gopkg.in/yaml.v3"
 )
 
 // 默认配置
 const (
-	LogsTable = `sqitch_dbyouyou_logs` // 日志表名称
+	LogsTable = `dbvm_logs` // 日志表名称
 
-	ConfFile  = `sqitch.conf`
-	PlanFile  = `sqitch.plan`
+	ConfFile  = `dbvm.yaml`
+	PlanFile  = `dbvm.plan`
 	DeployDir = `deploy`
-	VerifyDir = `verify`
 	RevertDir = `revert`
 )
 
+// Rule 规则
+type Rule struct {
+	NotNull bool `yaml:"notNull"`
+	Default bool `yaml:"default"`
+}
+
 // Config 数据库配置
 type Config struct {
-	Engine    string // 优先使用dburi中的engine
-	LogsTable string // [default= sqitch_dbyouyou_logs]
+	Engine    string `yaml:"engine"`    // 优先使用dburi中的engine
+	FromTable string `yaml:"fromTable"` // 重命名日志表
+	LogsTable string `yaml:"logsTable"` // [default= dbvm_logs]
+
+	Rule Rule `yaml:"rule"`
 }
 
 // 修正目录
@@ -43,26 +52,11 @@ func ParseConfig(dir string) (*Config, error) {
 		return nil, err
 	}
 
-	cnf, err := ini.Load(dir + ConfFile)
+	data, err := os.ReadFile(dir + ConfFile)
 	if err != nil {
 		return nil, err
 	}
-
-	conf := &Config{
-		LogsTable: LogsTable,
-	}
-
-	sec := cnf.Section(`core`)
-	key, _ := sec.GetKey(`engine`)
-	if key != nil {
-		conf.Engine = key.String()
-	}
-
-	sec = cnf.Section(`core "variables"`)
-	key, _ = sec.GetKey(`logsTable`)
-	if key != nil {
-		conf.LogsTable = key.String()
-	}
-
-	return conf, nil
+	conf := &Config{}
+	err = yaml.Unmarshal(data, conf)
+	return conf, err
 }

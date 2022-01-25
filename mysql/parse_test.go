@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/nbio/st"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_ParseSqlBlock(t *testing.T) {
@@ -40,14 +40,14 @@ func Test_ParseSqlBlock(t *testing.T) {
 	file := `./temp-plan.sql`
 
 	err := os.WriteFile(file, data, os.ModePerm)
-	st.Assert(t, err, nil)
+	assert.Equal(t, err, nil)
 
 	blocks, err := parseSqlBlocks(file)
-	st.Assert(t, err, nil)
-	st.Assert(t, len(blocks), 2)
-	st.Assert(t, len(blocks[0].Items), 3)
-	st.Assert(t, blocks[0].Ignore, []uint16{1091})
-	st.Assert(t, blocks[1].Ignore, []uint16{})
+	assert.Equal(t, err, nil)
+	assert.Equal(t, len(blocks), 2)
+	assert.Equal(t, len(blocks[0].Items), 3)
+	assert.Equal(t, blocks[0].Ignore, []uint16{1091})
+	assert.Equal(t, blocks[1].Ignore, []uint16{})
 
 	_ = os.Remove(file)
 }

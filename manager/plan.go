@@ -68,7 +68,6 @@ func ParsePlan(dir string) (map[string]string, []*Plan, error) {
 			Name:   name,
 			Note:   string(matches[0][4]),
 			Deploy: strings.Join([]string{dir, DeployDir, `/`, name, `.sql`}, ``),
-			Verify: strings.Join([]string{dir, VerifyDir, `/`, name, `.sql`}, ``),
 			Revert: strings.Join([]string{dir, RevertDir, `/`, name, `.sql`}, ``),
 		}
 		plan.Time, err = time.ParseInLocation(`2006-01-02T15:04:05Z`, string(matches[0][3]), time.UTC)
@@ -95,7 +94,6 @@ func AddPlan(dir string, plan *Plan, project, engine string) error {
 	}
 
 	plan.Deploy = strings.Join([]string{dir, DeployDir, `/`, plan.Name, `.sql`}, ``)
-	plan.Verify = strings.Join([]string{dir, VerifyDir, `/`, plan.Name, `.sql`}, ``)
 	plan.Revert = strings.Join([]string{dir, RevertDir, `/`, plan.Name, `.sql`}, ``)
 
 	data := strings.Join([]string{
@@ -109,21 +107,6 @@ func AddPlan(dir string, plan *Plan, project, engine string) error {
 		"",
 	}, "\n")
 	err = os.WriteFile(plan.Deploy, []byte(data), os.ModePerm)
-	if err != nil {
-		return err
-	}
-
-	data = strings.Join([]string{
-		fmt.Sprintf("-- Verify %s:%s on %s", project, plan.Name, engine),
-		"",
-		"BEGIN;",
-		"",
-		"-- add verify sql at here...",
-		"",
-		"ROLLBACK;",
-		"",
-	}, "\n")
-	err = os.WriteFile(plan.Verify, []byte(data), os.ModePerm)
 	if err != nil {
 		return err
 	}

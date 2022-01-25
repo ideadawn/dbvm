@@ -42,12 +42,6 @@ func InitProject(project *ProjectInfo) error {
 			return err
 		}
 	}
-	err = os.Mkdir(project.Dir+VerifyDir, os.ModePerm)
-	if err != nil {
-		if !os.IsExist(err) {
-			return err
-		}
-	}
 	err = os.Mkdir(project.Dir+RevertDir, os.ModePerm)
 	if err != nil {
 		if !os.IsExist(err) {
