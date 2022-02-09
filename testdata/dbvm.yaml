@@ -1,7 +1,15 @@
+# Core
 engine: mysql
-fromTable: sqitch_dbcm_logs
+fromTable: sqitch_dbvm_logs
 logsTable: dbvm_logs
 
+# Rule
 rule:
-  notNull: true
-  default: true
+  database:
+    create: false
+    drop: false
+  field:
+    notNull: true
+    excepts:
+      - TEXT
+      - BLOB

@@ -70,8 +70,8 @@ func (m *MySQL) Deploy(plan *manager.Plan) error {
 					continue
 				}
 
-				fmt.Println(`EXEC deploy: line=`, itm.Line, `, err=`, err)
-				fmt.Println(exec)
+				fmt.Println(`Deploy: file=`, plan.Deploy, ` line=`, itm.Line, `, err=`, err)
+				fmt.Println(exec, "\n")
 
 				//是否语法错误
 				myerr, ok := err.(*driver.MySQLError)
