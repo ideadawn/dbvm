@@ -10,13 +10,15 @@ var (
 	errTableNotInit  = errors.New(`Log table was not initiated.`)
 	errDeployNothing = errors.New(`There is nothing to deploy.`)
 
-	errMultiBytes    = errors.New(`Syntax Error: Multi bytes charactor in sql.`)
-	errNoIfNotExists = errors.New(`"IF NOT EXISTS" is necessary.`)
-	errNoIfExists    = errors.New(`"IF EXISTS" is necessary.`)
-	errNoNotNull     = errors.New(`"NOT NULL" is necessary.`)
-	errNoDefault     = errors.New(`"DEFAULT" is necessary.`)
+	errMultiBytes = errors.New(`Syntax Error: Multi bytes charactor in sql.`)
+	errNoNotNull  = errors.New(`"NOT NULL" is necessary.`)
+	errNoDefault  = errors.New(`"DEFAULT" is necessary.`)
 
-	errNoRevert = errors.New(`Any deployment must has a pair of revertion, except "-- NO-REVERT" statement.`)
+	errBlockNoBegin = errors.New(`Block must be begin with "BEGIN;".`)
+	errBlockNoEnd   = errors.New(`Block must be end with "COMMIT;" or "ROLLBACK;".`)
+	errSqlNoEnd     = errors.New(`Sql statement without end.`)
 
-	errSqlNotEnd = errors.New(`Sql statement without end.`)
+	errCreateTableINE = errors.New(`"CREATE TABLE" must follow " IF NOT EXISTS".`)
+	errDropTableIE    = errors.New(`"DROP TABLE" must follow " IF EXISTS".`)
+	errAlterUnknown   = errors.New(`Unknown sub command for alter.`)
 )

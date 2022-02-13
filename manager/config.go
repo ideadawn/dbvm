@@ -19,8 +19,8 @@ const (
 
 // 魔法注释
 var (
-	NoRevert      = []byte(`NO-REVERT`)      // 不需要回退
-	NoTransaction = []byte(`NO-TRANSACTION`) // 不需要启动事务
+	MagicIgnore  = []byte(`IGNORE`)   // 忽略指定的错误
+	MagicNoTrans = []byte(`NO-TRANS`) // 不需要启动事务
 )
 
 // Database 数据库规则
