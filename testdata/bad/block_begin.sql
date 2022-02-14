@@ -1,0 +1,3 @@
+-- Bad Block Begin
+
+COMMIT;

@@ -1,4 +1,4 @@
--- Deploy kc:v1.7.0 to mysql
+-- Deploy test:v1.7.0 to mysql
 
 
 ALTER TABLE `test`

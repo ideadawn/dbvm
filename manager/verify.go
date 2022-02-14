@@ -1,5 +1,6 @@
 package manager
 
+/*
 import (
 	"errors"
 	"fmt"
@@ -44,3 +45,4 @@ func (m *Manager) Verify(to string) error {
 
 	return m.engine.Verify(dest)
 }
+*/

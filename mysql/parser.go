@@ -2,28 +2,12 @@ package mysql
 
 import (
 	"bytes"
+	"fmt"
 	"os"
-	"regexp"
 	"strconv"
 
 	"github.com/VividCortex/mysqlerr"
 	"github.com/ideadawn/dbvm/manager"
-)
-
-var (
-	reAlter        = regexp.MustCompile("(?is)(ALTER[ \t\n]+TABLE.*?)((?:ADD|CHANGE|MODIFY|DROP).*)")
-	reAlterSub     = regexp.MustCompile("(?is)((?:ADD|CHANGE|MODIFY|DROP)[ \t\n]+(?:COLUMN|INDEX|KEY|PRIMARY|UNIQUE).*?(?:,[ \t\n]+|;))")
-	reAddColumn    = regexp.MustCompile("^(?is)[ \t\n]*ADD[ \t\n]+COLUMN")
-	reAddPrimary   = regexp.MustCompile("^(?is)[ \t\n]*ADD[ \t\n]+PRIMARY")
-	reAddIndex     = regexp.MustCompile("^(?is)[ \t\n]*ADD[ \t\n]+(?:UNIQUE[ \t\n]+)?(?:INDEX|KEY)")
-	reDropColumn   = regexp.MustCompile("^(?is)[ \t\n]*DROP[ \t\n]+(?:COLUMN|INDEX|KEY|PRIMARY)")
-	reChangeColumn = regexp.MustCompile("^(?is)[ \t\n]*CHANGE[ \t\n]+COLUMN")
-	reModifyColumn = regexp.MustCompile("^(?is)[ \t\n]*MODIFY[ \t\n]+COLUMN")
-
-	reCreateTable    = regexp.MustCompile("^(?is)[ \t\n]*CREATE[ \t\n]+TABLE")
-	reCreateTableINE = regexp.MustCompile("^(?is)[ \t\n]*CREATE[ \t\n]+TABLE[ \t\n]+IF[ \t\n]+NOT[ \t\n]+EXISTS")
-	reDropTable      = regexp.MustCompile("^(?is)[ \t\n]*DROP[ \t\n]+TABLE")
-	reDropTableIE    = regexp.MustCompile("^(?is)[ \t\n]*DROP[ \t\n]+TABLE[ \t\n]+IF[ \t\n]+EXISTS")
 )
 
 // SQL语句集
@@ -35,10 +19,12 @@ type sqlItem struct {
 
 // SQL事务块
 type sqlBlock struct {
-	noTrans bool
-	ignores []uint16
-	inBlock bool
-	items   []*sqlItem
+	noTrans   bool
+	ignores   []uint16
+	inBlock   bool
+	comments  [][]byte
+	delimiter []byte
+	items     []*sqlItem
 }
 
 // SQL解析器
@@ -51,6 +37,26 @@ type sqlParser struct {
 	err  error
 }
 
+// Error implement error
+func (p *sqlParser) Error() string {
+	if p == nil {
+		return ``
+	}
+	if p.sql != `` {
+		return fmt.Sprintf("%s on line %d: %s\n\t%s", p.file, p.line, p.err, p.sql)
+	}
+	return fmt.Sprintf("%s on line %d: %s", p.file, p.line, p.err)
+}
+
+// reset parser
+func (p *sqlParser) reset(file string) {
+	p.file = file
+	p.blocks = p.blocks[0:0]
+	p.line = 0
+	p.sql = ``
+	p.err = nil
+}
+
 // 解析SQL语句块
 func (p *sqlParser) parseSqlBlocks() {
 	var data []byte
@@ -59,36 +65,29 @@ func (p *sqlParser) parseSqlBlocks() {
 		return
 	}
 
-	var (
-		newLine   = []byte{'\n'}
-		sqlEnd    = []byte{';'}
-		commaGap  = []byte{','}
-		delimiter = []byte(`DELIMITER`)
-		empty     = []byte{}
-
-		commentBegin  = []byte(`--`)
-		blockBegin    = []byte(`BEGIN`)
-		blockCommit   = []byte(`COMMIT`)
-		blockRollback = []byte(`ROLLBACK`)
-	)
-
-	data = bytes.Replace(data, []byte("\r\n"), newLine, -1)
-	data = bytes.Replace(data, []byte("\r"), newLine, -1)
-	lines := bytes.Split(data, newLine)
+	data = bytes.Replace(data, []byte("\r\n"), myCnf.newLine, -1)
+	data = bytes.Replace(data, []byte("\r"), myCnf.newLine, -1)
+	lines := bytes.Split(data, myCnf.newLine)
 
 	var (
-		block = &sqlBlock{}
-		item  = &sqlItem{}
+		sqlEnd = myCnf.defaultEnd
+		block  = &sqlBlock{}
+		item   = &sqlItem{}
 	)
 
 	for idx, line := range lines {
 		data = bytes.TrimSpace(line)
 		if len(data) == 0 {
+			if block.inBlock {
+				item.comments = append(item.comments, myCnf.empty)
+			} else {
+				block.comments = append(block.comments, myCnf.empty)
+			}
 			continue
 		}
 
-		if bytes.HasPrefix(data, blockBegin) {
-			if len(item.sqlArr) > 0 {
+		if bytes.HasPrefix(data, myCnf.blockBegin) {
+			if len(item.sqlArr) > 0 || len(block.items) > 0 {
 				if block.inBlock {
 					p.line = idx
 					p.err = errBlockNoEnd
@@ -107,7 +106,7 @@ func (p *sqlParser) parseSqlBlocks() {
 			continue
 		}
 
-		if bytes.HasPrefix(data, blockCommit) || bytes.HasPrefix(data, blockRollback) {
+		if bytes.HasPrefix(data, myCnf.blockCommit) {
 			if !block.inBlock {
 				p.line = idx
 				p.err = errBlockNoBegin
@@ -116,24 +115,27 @@ func (p *sqlParser) parseSqlBlocks() {
 
 			if len(item.sqlArr) > 0 {
 				block.items = append(block.items, item)
+			}
+			if len(block.items) > 0 {
 				p.analyzeBlock(block)
 				if p.err != nil {
 					return
 				}
-				block = &sqlBlock{}
-				item = &sqlItem{}
 			}
 
-			block.inBlock = false
+			block = &sqlBlock{
+				inBlock: false,
+			}
+			item = &sqlItem{}
 			continue
 		}
 
-		if bytes.HasPrefix(data, commentBegin) {
+		if bytes.HasPrefix(data, myCnf.commentBegin) {
 			data = bytes.TrimSpace(data[2:])
 			if bytes.Compare(data, manager.MagicNoTrans) == 0 {
 				block.noTrans = true
 			} else if bytes.HasPrefix(data, manager.MagicIgnore) {
-				lArr := bytes.Split(data[len(manager.MagicIgnore):], commaGap)
+				lArr := bytes.Split(data[len(manager.MagicIgnore):], myCnf.commaGap)
 				for _, iData := range lArr {
 					iData = bytes.TrimSpace(iData)
 					if len(iData) == 0 {
@@ -142,28 +144,37 @@ func (p *sqlParser) parseSqlBlocks() {
 					u64, err := strconv.ParseUint(string(iData), 10, 16)
 					if err != nil {
 						p.line = idx
-						p.sql = line
+						p.sql = string(line)
 						p.err = err
 						return
 					}
 					appendUint16Array(&block.ignores, uint16(u64))
 				}
 			} else {
-				item.comments = append(item.comments, line)
+				if block.inBlock {
+					item.comments = append(item.comments, line)
+				} else {
+					block.comments = append(block.comments, line)
+				}
 			}
 			continue
 		}
 
-		if bytes.HasPrefix(data, delimiter) {
-			data = bytes.Replace(data, delimiter, empty, -1)
+		if bytes.HasPrefix(data, myCnf.delimiter) {
+			data = bytes.Replace(data, myCnf.delimiter, myCnf.empty, -1)
 			sqlEnd = bytes.TrimSpace(data)
+			if bytes.Compare(sqlEnd, myCnf.defaultEnd) != 0 {
+				block.delimiter = sqlEnd
+			}
 			continue
 		}
 
 		if bytes.HasSuffix(data, sqlEnd) {
 			item.sqlArr = append(item.sqlArr, line)
 			block.items = append(block.items, item)
-			if !block.inBlock {
+			if block.inBlock {
+				item = &sqlItem{}
+			} else {
 				p.analyzeBlock(block)
 				if p.err != nil {
 					return
@@ -182,12 +193,14 @@ func (p *sqlParser) parseSqlBlocks() {
 
 // 分析事务块
 func (p *sqlParser) analyzeBlock(blk *sqlBlock) {
-	items := blk.items
+	items := make([]*sqlItem, 0, len(blk.items))
+	items = append(items, blk.items...)
 	blk.items = blk.items[0:0]
+
 	for _, item := range items {
-		sqlBytes := bytes.Join(item.sqlArr, []byte{'\n'})
-		if reCreateTable.Match(sqlBytes) {
-			if reCreateTableINE.Match(sqlBytes) {
+		sqlBytes := bytes.Join(item.sqlArr, myCnf.newLine)
+		if myCnf.reCreateTable.Match(sqlBytes) {
+			if myCnf.reCreateTableINE.Match(sqlBytes) {
 				blk.items = append(blk.items, item)
 				continue
 			}
@@ -197,8 +210,8 @@ func (p *sqlParser) analyzeBlock(blk *sqlBlock) {
 			return
 		}
 
-		if reDropTable.Match(sqlBytes) {
-			if reDropTableIE.Match(sqlBytes) {
+		if myCnf.reDropTable.Match(sqlBytes) {
+			if myCnf.reDropTableIE.Match(sqlBytes) {
 				blk.items = append(blk.items, item)
 				continue
 			}
@@ -208,7 +221,7 @@ func (p *sqlParser) analyzeBlock(blk *sqlBlock) {
 			return
 		}
 
-		alterArr := reAlter.FindSubmatch(sqlBytes)
+		alterArr := myCnf.reAlter.FindSubmatch(sqlBytes)
 		if len(alterArr) == 3 {
 			p.splitAlter(blk, item, alterArr)
 			if p.err != nil {
@@ -224,7 +237,7 @@ func (p *sqlParser) analyzeBlock(blk *sqlBlock) {
 
 // 拆分ALTER
 func (p *sqlParser) splitAlter(blk *sqlBlock, item *sqlItem, alterArr [][]byte) {
-	subArr := reAlterSub.FindAllSubmatch(alterArr[2], -1)
+	subArr := myCnf.reAlterSub.FindAllSubmatch(alterArr[2], -1)
 	comments := item.comments
 	for idx, val := range subArr {
 		var errNum uint16
@@ -232,17 +245,17 @@ func (p *sqlParser) splitAlter(blk *sqlBlock, item *sqlItem, alterArr [][]byte) 
 			comments = comments[0:0]
 		}
 
-		if reAddColumn.Match(val[1]) {
+		if myCnf.reAddColumn.Match(val[1]) {
 			errNum = mysqlerr.ER_DUP_FIELDNAME
-		} else if reAddIndex.Match(val[1]) {
+		} else if myCnf.reAddIndex.Match(val[1]) {
 			errNum = mysqlerr.ER_DUP_KEYNAME
-		} else if reAddPrimary.Match(val[1]) {
+		} else if myCnf.reAddPrimary.Match(val[1]) {
 			errNum = mysqlerr.ER_MULTIPLE_PRI_KEY
-		} else if reChangeColumn.Match(val[1]) {
+		} else if myCnf.reChangeColumn.Match(val[1]) {
 			errNum = mysqlerr.ER_BAD_FIELD_ERROR
-		} else if reDropColumn.Match(val[1]) {
+		} else if myCnf.reDropColumn.Match(val[1]) {
 			errNum = mysqlerr.ER_CANT_DROP_FIELD_OR_KEY
-		} else if reModifyColumn.Match(val[1]) {
+		} else if myCnf.reModifyColumn.Match(val[1]) {
 			errNum = 1
 		}
 		if errNum == 0 {
@@ -255,14 +268,22 @@ func (p *sqlParser) splitAlter(blk *sqlBlock, item *sqlItem, alterArr [][]byte) 
 		if errNum > 1 {
 			appendUint16Array(&blk.ignores, errNum)
 		}
+		var delimiter []byte
+		if len(blk.delimiter) > 0 {
+			delimiter = blk.delimiter
+		} else {
+			delimiter = myCnf.defaultEnd
+		}
 		blk.items = append(blk.items, &sqlItem{
 			line:     item.line + idx + 1,
 			comments: comments,
 			sqlArr: [][]byte{
-				alterArr[1],
-				[]byte{' '},
-				bytes.TrimRight(val[1], ",; \t\n"),
-				[]byte{';'},
+				bytes.Join([][]byte{
+					alterArr[1],
+					myCnf.space,
+					bytes.TrimRight(val[1], ", \t\n"+string(delimiter)),
+					delimiter,
+				}, myCnf.empty),
 			},
 		})
 	}

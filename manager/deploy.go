@@ -58,10 +58,6 @@ func (m *Manager) Deploy(to string) error {
 		if err != nil || info.IsDir() {
 			return fmt.Errorf("Deploy-File ( %s ) check failed: %s\n", plan.Deploy, err.Error())
 		}
-		info, err = os.Stat(plan.Verify)
-		if err != nil || info.IsDir() {
-			return fmt.Errorf("Verify-File ( %s ) check failed: %s\n", plan.Verify, err.Error())
-		}
 		info, err = os.Stat(plan.Revert)
 		if err != nil || info.IsDir() {
 			return fmt.Errorf("Revert-File ( %s ) check failed: %s\n", plan.Revert, err.Error())
@@ -69,19 +65,6 @@ func (m *Manager) Deploy(to string) error {
 
 		err = m.engine.Deploy(plan)
 		if err != nil {
-			e2 := m.engine.Revert(plan)
-			if e2 != nil {
-				fmt.Println(`revert error:`, e2)
-			}
-			return err
-		}
-
-		err = m.engine.Verify(plan)
-		if err != nil {
-			e2 := m.engine.Revert(plan)
-			if e2 != nil {
-				fmt.Println(`revert error:`, e2)
-			}
 			return err
 		}
 

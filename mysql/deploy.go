@@ -1,22 +1,13 @@
 package mysql
 
 import (
+	"bytes"
 	"database/sql"
 	"fmt"
-	"strings"
 
 	driver "github.com/go-sql-driver/mysql"
 	"github.com/ideadawn/dbvm/manager"
 )
-
-func inErrCodes(code uint16, arr []uint16) bool {
-	for _, val := range arr {
-		if val == code {
-			return true
-		}
-	}
-	return false
-}
 
 // Deploy 部署指定版本
 func (m *MySQL) Deploy(plan *manager.Plan) error {
@@ -27,51 +18,57 @@ func (m *MySQL) Deploy(plan *manager.Plan) error {
 		return errTableNotInit
 	}
 
-	blocks, err := parseSqlBlocks(plan.Deploy)
-	if err != nil {
-		return err
+	parser := &sqlParser{
+		file: plan.Deploy,
 	}
-	lth := len(blocks)
-	if lth == 0 {
+
+	parser.parseSqlBlocks()
+	if parser.err != nil {
+		return parser
+	}
+	if len(parser.blocks) == 0 {
 		return errDeployNothing
 	}
 
-	blocks = append(blocks, &sqlBlock{
-		Items: []*sqlItem{
+	parser.blocks = append(parser.blocks, &sqlBlock{
+		items: []*sqlItem{
 			&sqlItem{
-				Line: 999999,
-				SqlArr: []string{
-					fmt.Sprintf(
+				line: 999999,
+				sqlArr: [][]byte{
+					[]byte(fmt.Sprintf(
 						"INSERT INTO `%s` (`name`,`time`,`status`) VALUES ('%s', '%d', '%d');",
 						m.table,
 						plan.Name,
 						plan.Time.Unix(),
 						StatusDeployed,
-					),
+					)),
 				},
 			},
 		},
 	})
 
+	newLine := []byte{'\n'}
 	var tx *sql.Tx
-	for _, blk := range blocks {
+	var err error
+	for _, blk := range parser.blocks {
 		for tries := 0; tries < retry; tries++ {
 			tx, err = m.db.Begin()
 			if err != nil {
-				fmt.Println(`BEGIN deploy:`, err)
+				fmt.Println(`Deploy BEGIN:`, err)
 				continue
 			}
 
-			lastOffset := len(blk.Items) - 1
-			for offset, itm := range blk.Items {
-				exec := strings.Join(itm.SqlArr, "\n")
+			lastOffset := len(blk.items) - 1
+			for offset, itm := range blk.items {
+				exec := string(bytes.Join(itm.sqlArr, newLine))
 				_, err = tx.Exec(exec)
 				if err == nil {
 					continue
 				}
 
-				fmt.Println(`Deploy: file=`, plan.Deploy, ` line=`, itm.Line, `, err=`, err)
-				fmt.Println(exec, "\n")
+				fmt.Println(`Deploy`, plan.Deploy, `on line`, itm.line, `:`, err)
+				fmt.Println(exec)
+				fmt.Println("")
 
 				//是否语法错误
 				myerr, ok := err.(*driver.MySQLError)
@@ -79,7 +76,7 @@ func (m *MySQL) Deploy(plan *manager.Plan) error {
 					break
 				}
 
-				if inErrCodes(myerr.Number, blk.Ignore) {
+				if inUint16Array(blk.ignores, myerr.Number) {
 					err = nil
 					if offset == lastOffset {
 						_ = tx.Rollback()
@@ -110,7 +107,7 @@ func (m *MySQL) Deploy(plan *manager.Plan) error {
 			if err == nil {
 				break
 			}
-			fmt.Println(`COMMIT deploy:`, err)
+			fmt.Println(`Deploy COMMIT:`, err)
 		}
 
 		if err != nil {

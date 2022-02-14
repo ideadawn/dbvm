@@ -1,0 +1,6 @@
+-- Bad Create Table
+
+CREATE TABLE `test` (
+	`id` INT(10) NOT NULL AUTO_INCREMENT COMMENT '自增ID',
+	PRIMARY KEY (`id`) USING BTREE
+) COMMENT='测试' COLLATE='utf8mb4_bin' ENGINE=InnoDB;

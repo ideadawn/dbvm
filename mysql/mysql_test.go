@@ -92,8 +92,8 @@ func Test_MySQL(t *testing.T) {
 
 	err = my.Deploy(plan)
 	assert.Equal(t, err, nil)
-	err = my.Verify(plan)
-	assert.Equal(t, err, nil)
+	//err = my.Verify(plan)
+	//assert.Equal(t, err, nil)
 	err = my.Revert(plan)
 	assert.Equal(t, err, nil)
 

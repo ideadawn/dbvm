@@ -1,4 +1,4 @@
--- Revert kc:v1.7.0 from mysql
+-- Revert test:v1.7.0 from mysql
 
 
 ALTER TABLE `test`

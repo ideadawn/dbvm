@@ -21,8 +21,6 @@ type Engine interface {
 
 	// Deploy 部署指定版本
 	Deploy(*Plan) error
-	// Verify 检查版本部署
-	Verify(*Plan) error
 	// Revert 回退指定版本
 	Revert(*Plan) error
 }

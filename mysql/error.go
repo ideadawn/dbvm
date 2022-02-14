@@ -15,7 +15,7 @@ var (
 	errNoDefault  = errors.New(`"DEFAULT" is necessary.`)
 
 	errBlockNoBegin = errors.New(`Block must be begin with "BEGIN;".`)
-	errBlockNoEnd   = errors.New(`Block must be end with "COMMIT;" or "ROLLBACK;".`)
+	errBlockNoEnd   = errors.New(`Block must be end with "COMMIT;".`)
 	errSqlNoEnd     = errors.New(`Sql statement without end.`)
 
 	errCreateTableINE = errors.New(`"CREATE TABLE" must follow " IF NOT EXISTS".`)

@@ -1,10 +1,26 @@
--- Deploy kc:v1.6.0 to mysql
+-- Deploy test:v1.6.0 to mysql
 
 
+-- Create Table
 CREATE TABLE IF NOT EXISTS `test` (
 	`id` INT(10) NOT NULL AUTO_INCREMENT COMMENT '自增ID',
 	PRIMARY KEY (`id`) USING BTREE
-)
-COMMENT='测试'
-COLLATE='utf8_bin'
-ENGINE=InnoDB;
+) COMMENT='测试' COLLATE='utf8mb4_bin' ENGINE=InnoDB;
+
+-- Multi Sql Blocks
+-- NO-TRANS
+-- IGNORE 1060
+DELIMITER //
+BEGIN;
+ALTER TABLE `test`
+	ADD COLUMN `phone` VARCHAR(20) NOT NULL DEFAULT '' COLLATE 'ascii_bin' COMMENT '手机号',
+	ADD COLUMN `nickname` VARCHAR(32) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin' COMMENT '昵称',
+	DROP COLUMN `not_exists`,
+	ADD INDEX `phone` (`phone`),
+	ADD PRIMARY KEY (`id`)//
+
+ALTER TABLE `test`
+	MODIFY COLUMN `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增ID',
+	CHANGE COLUMN `phone` `phone` VARCHAR(20) NOT NULL DEFAULT '' COLLATE 'ascii_bin' COMMENT '手机号'//
+COMMIT;
+DELIMITER ;
