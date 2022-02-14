@@ -170,7 +170,8 @@ func (p *sqlParser) parseSqlBlocks() {
 		}
 
 		if bytes.HasSuffix(data, sqlEnd) {
-			item.sqlArr = append(item.sqlArr, line)
+			data = bytes.TrimRight(line, " \t\n")
+			item.sqlArr = append(item.sqlArr, data[0:len(data)-len(sqlEnd)])
 			block.items = append(block.items, item)
 			if block.inBlock {
 				item = &sqlItem{}
@@ -268,21 +269,14 @@ func (p *sqlParser) splitAlter(blk *sqlBlock, item *sqlItem, alterArr [][]byte) 
 		if errNum > 1 {
 			appendUint16Array(&blk.ignores, errNum)
 		}
-		var delimiter []byte
-		if len(blk.delimiter) > 0 {
-			delimiter = blk.delimiter
-		} else {
-			delimiter = myCnf.defaultEnd
-		}
 		blk.items = append(blk.items, &sqlItem{
 			line:     item.line + idx + 1,
 			comments: comments,
 			sqlArr: [][]byte{
 				bytes.Join([][]byte{
 					alterArr[1],
-					myCnf.space,
-					bytes.TrimRight(val[1], ", \t\n"+string(delimiter)),
-					delimiter,
+					bytes.TrimRight(val[1], ",; \t\n"),
+					myCnf.defaultEnd,
 				}, myCnf.empty),
 			},
 		})

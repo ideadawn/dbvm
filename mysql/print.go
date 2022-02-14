@@ -10,6 +10,7 @@ import (
 func (p *sqlParser) print() {
 	noTrans := string(manager.MagicNoTrans)
 	ignore := string(manager.MagicIgnore)
+
 	for _, blk := range p.blocks {
 		for _, cmmt := range blk.comments {
 			fmt.Println(string(cmmt))
@@ -27,11 +28,11 @@ func (p *sqlParser) print() {
 			}
 			fmt.Printf(string(myCnf.newLine))
 		}
+		if blk.inBlock {
+			fmt.Println(string(myCnf.blockBegin))
+		}
 		if len(blk.delimiter) > 0 {
 			fmt.Println(string(myCnf.delimiter), string(blk.delimiter))
-		}
-		if blk.inBlock {
-			fmt.Println(string(myCnf.blockBegin) + ";")
 		}
 		for _, itm := range blk.items {
 			for _, cmmt := range itm.comments {
@@ -40,10 +41,13 @@ func (p *sqlParser) print() {
 			for _, sql := range itm.sqlArr {
 				fmt.Println(string(sql))
 			}
-			//fmt.Printf(" ---- ITEM %d ---- \n", idx)
+		}
+		if len(blk.delimiter) > 0 {
+			fmt.Println(string(blk.delimiter))
+			fmt.Println(string(myCnf.delimiter), string(myCnf.defaultEnd))
 		}
 		if blk.inBlock {
-			fmt.Println(string(myCnf.blockCommit) + ";")
+			fmt.Println(string(myCnf.blockCommit))
 		}
 	}
 	fmt.Println("")

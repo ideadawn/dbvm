@@ -11,7 +11,6 @@ type mysqlConfig struct {
 	commaGap   []byte
 	delimiter  []byte
 	empty      []byte
-	space      []byte
 
 	commentBegin []byte
 	blockBegin   []byte
@@ -39,11 +38,10 @@ var myCnf = &mysqlConfig{
 	commaGap:   []byte{','},
 	delimiter:  []byte(`DELIMITER`),
 	empty:      []byte{},
-	space:      []byte{' '},
 
 	commentBegin: []byte(`--`),
-	blockBegin:   []byte(`BEGIN`),
-	blockCommit:  []byte(`COMMIT`),
+	blockBegin:   []byte(`BEGIN;`),
+	blockCommit:  []byte(`COMMIT;`),
 
 	reAlter:        regexp.MustCompile("(?is)(ALTER[ \t\n]+TABLE.*?)((?:ADD|CHANGE|MODIFY|DROP).*)"),
 	reAlterSub:     regexp.MustCompile("(?is)((?:ADD|CHANGE|MODIFY|DROP)[ \t\n]+(?:COLUMN|INDEX|KEY|PRIMARY|UNIQUE).*?(?:,[ \t\n]+|;|$))"),

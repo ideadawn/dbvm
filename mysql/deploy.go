@@ -47,7 +47,6 @@ func (m *MySQL) Deploy(plan *manager.Plan) error {
 		},
 	})
 
-	newLine := []byte{'\n'}
 	var tx *sql.Tx
 	var err error
 	for _, blk := range parser.blocks {
@@ -60,7 +59,7 @@ func (m *MySQL) Deploy(plan *manager.Plan) error {
 
 			lastOffset := len(blk.items) - 1
 			for offset, itm := range blk.items {
-				exec := string(bytes.Join(itm.sqlArr, newLine))
+				exec := string(bytes.Join(itm.sqlArr, myCnf.newLine))
 				_, err = tx.Exec(exec)
 				if err == nil {
 					continue
