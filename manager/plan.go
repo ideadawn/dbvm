@@ -18,7 +18,6 @@ type Plan struct {
 	Hostname string
 	Note     string
 	Deploy   string
-	Verify   string
 	Revert   string
 
 	deployed bool
@@ -99,11 +98,8 @@ func AddPlan(dir string, plan *Plan, project, engine string) error {
 	data := strings.Join([]string{
 		fmt.Sprintf("-- Deploy %s:%s to %s", project, plan.Name, engine),
 		"",
-		"BEGIN;",
 		"",
 		"-- add deploy sql at here...",
-		"",
-		"COMMIT;",
 		"",
 	}, "\n")
 	err = os.WriteFile(plan.Deploy, []byte(data), os.ModePerm)
@@ -114,11 +110,8 @@ func AddPlan(dir string, plan *Plan, project, engine string) error {
 	data = strings.Join([]string{
 		fmt.Sprintf("-- Revert %s:%s from %s", project, plan.Name, engine),
 		"",
-		"BEGIN;",
 		"",
 		"-- add revert sql at here...",
-		"",
-		"COMMIT;",
 		"",
 	}, "\n")
 	err = os.WriteFile(plan.Revert, []byte(data), os.ModePerm)

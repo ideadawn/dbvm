@@ -25,9 +25,6 @@ func (m *myEngine) ListLogs() ([]*Log, error) {
 func (m *myEngine) Deploy(*Plan) error {
 	return nil
 }
-func (m *myEngine) Verify(*Plan) error {
-	return nil
-}
 func (m *myEngine) Revert(*Plan) error {
 	return nil
 }
@@ -35,15 +32,15 @@ func (m *myEngine) Revert(*Plan) error {
 func Test_Manager(t *testing.T) {
 	RegisterEngine(`mysql`, &myEngine{})
 
-	mgr, err := New(`../sqitch`, `db:mysql://root:qwe123@127.0.0.1:3306/test?charset=utf8mb4`)
-	assert.Equal(t, err, nil)
+	mgr, err := New(`../testdata`, `db:mysql://root:qwe123@127.0.0.1:3306/test?charset=utf8mb4`)
+	assert.Equal(t, nil, err)
 
 	_ = mgr.GetLogsTable()
 	err = mgr.Deploy(`latest`)
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 
 	err = mgr.Revert(`v1.7.0`)
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 
 	mgr.Close()
 }

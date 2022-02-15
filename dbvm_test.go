@@ -23,9 +23,6 @@ func (m *myEngine) ListLogs() ([]*manager.Log, error) {
 func (m *myEngine) Deploy(*manager.Plan) error {
 	return nil
 }
-func (m *myEngine) Verify(*manager.Plan) error {
-	return nil
-}
 func (m *myEngine) Revert(*manager.Plan) error {
 	return nil
 }
@@ -60,12 +57,12 @@ func Test_DBVM(t *testing.T) {
 		`dbvm`,
 		`init`,
 		`--project`, `test`,
-		`--engine`, `mysql`,
 		`--dir`, dir,
-		`--set`, `logsTable=logs`,
+		`--engine`, `mysql`,
+		`--table`, `dbvm_logs`,
 	}
 	err = cmdInit()
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 
 	os.Args = []string{
 		`dbvm`,
@@ -76,7 +73,7 @@ func Test_DBVM(t *testing.T) {
 		`--user`, `test`,
 	}
 	err = cmdAdd()
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 
 	os.Args = []string{
 		`dbvm`,
@@ -86,40 +83,17 @@ func Test_DBVM(t *testing.T) {
 		`--to`, `latest`,
 	}
 	err = cmdDeploy()
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
+
+	os.Args = []string{
+		`dbvm`,
+		`print`,
+		`testdata/deploy/v1.7.0.sql`,
+	}
+	err = cmdPrint()
+	assert.Equal(t, nil, err)
 
 	manager.RegisterEngine(`mysql`, &myEngine2{})
-
-	os.Args = []string{
-		`dbvm`,
-		`verify`,
-		`--dir`, dir,
-		`--uri`, `db:mysql://root:123@127.0.0.1:3306/test`,
-		`--from`, `v1.0.0`,
-	}
-	err = cmdVerify()
-	assert.Equal(t, err, nil)
-
-	os.Args = []string{
-		`dbvm`,
-		`verify`,
-		`--dir`, dir,
-		`--uri`, `db:mysql://root:123@127.0.0.1:3306/test`,
-		`--to`, `v1.0.0`,
-	}
-	err = cmdVerify()
-	assert.Equal(t, err, nil)
-
-	os.Args = []string{
-		`dbvm`,
-		`verify`,
-		`--dir`, dir,
-		`--uri`, `db:mysql://root:123@127.0.0.1:3306/test`,
-		`--from`, `v1.0.0`,
-		`--to`, `v1.0.0`,
-	}
-	err = cmdVerify()
-	assert.Equal(t, err, nil)
 
 	os.Args = []string{
 		`dbvm`,
@@ -129,5 +103,5 @@ func Test_DBVM(t *testing.T) {
 		`--to`, `v1.0.0`,
 	}
 	err = cmdRevert()
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 }

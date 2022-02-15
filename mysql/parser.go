@@ -10,21 +10,14 @@ import (
 	"github.com/ideadawn/dbvm/manager"
 )
 
-// SQL语句集
-type sqlItem struct {
-	line     int
-	comments [][]byte
-	sqlArr   [][]byte
-}
-
 // SQL事务块
 type sqlBlock struct {
+	comments  [][]byte
 	noTrans   bool
 	ignores   []uint16
-	inBlock   bool
-	comments  [][]byte
 	delimiter []byte
-	items     []*sqlItem
+	line      int
+	sqlArr    [][]byte
 }
 
 // SQL解析器
@@ -71,62 +64,18 @@ func (p *sqlParser) parseSqlBlocks() {
 
 	var (
 		sqlEnd = myCnf.defaultEnd
-		block  = &sqlBlock{}
-		item   = &sqlItem{}
+		block  = &sqlBlock{
+			delimiter: myCnf.defaultEnd,
+		}
 	)
 
 	for idx, line := range lines {
 		data = bytes.TrimSpace(line)
 		if len(data) == 0 {
-			if block.inBlock {
-				item.comments = append(item.comments, myCnf.empty)
-			} else {
-				block.comments = append(block.comments, myCnf.empty)
-			}
+			block.comments = append(block.comments, myCnf.empty)
 			continue
 		}
-
-		if bytes.HasPrefix(data, myCnf.blockBegin) {
-			if len(item.sqlArr) > 0 || len(block.items) > 0 {
-				if block.inBlock {
-					p.line = idx
-					p.err = errBlockNoEnd
-					return
-				}
-
-				block.items = append(block.items, item)
-				p.analyzeBlock(block)
-				if p.err != nil {
-					return
-				}
-				block = &sqlBlock{}
-				item = &sqlItem{}
-			}
-			block.inBlock = true
-			continue
-		}
-
-		if bytes.HasPrefix(data, myCnf.blockCommit) {
-			if !block.inBlock {
-				p.line = idx
-				p.err = errBlockNoBegin
-				return
-			}
-
-			if len(item.sqlArr) > 0 {
-				block.items = append(block.items, item)
-			}
-			if len(block.items) > 0 {
-				p.analyzeBlock(block)
-				if p.err != nil {
-					return
-				}
-			}
-
-			block = &sqlBlock{
-				inBlock: false,
-			}
-			item = &sqlItem{}
+		if bytes.HasPrefix(data, myCnf.blockBegin) || bytes.HasPrefix(data, myCnf.blockCommit) {
 			continue
 		}
 
@@ -151,11 +100,7 @@ func (p *sqlParser) parseSqlBlocks() {
 					appendUint16Array(&block.ignores, uint16(u64))
 				}
 			} else {
-				if block.inBlock {
-					item.comments = append(item.comments, line)
-				} else {
-					block.comments = append(block.comments, line)
-				}
+				block.comments = append(block.comments, line)
 			}
 			continue
 		}
@@ -171,81 +116,68 @@ func (p *sqlParser) parseSqlBlocks() {
 
 		if bytes.HasSuffix(data, sqlEnd) {
 			data = bytes.TrimRight(line, " \t\n")
-			item.sqlArr = append(item.sqlArr, data[0:len(data)-len(sqlEnd)])
-			block.items = append(block.items, item)
-			if block.inBlock {
-				item = &sqlItem{}
+			if bytes.Compare(sqlEnd, myCnf.defaultEnd) != 0 {
+				block.sqlArr = append(block.sqlArr, data[0:len(data)-len(sqlEnd)])
 			} else {
-				p.analyzeBlock(block)
-				if p.err != nil {
-					return
-				}
-				block = &sqlBlock{}
-				item = &sqlItem{}
+				block.sqlArr = append(block.sqlArr, data)
+			}
+			p.analyzeBlock(block)
+			if p.err != nil {
+				return
+			}
+			block = &sqlBlock{
+				delimiter: sqlEnd,
 			}
 		} else {
-			if len(item.sqlArr) == 0 {
-				item.line = idx
+			if len(block.sqlArr) == 0 {
+				block.line = idx
 			}
-			item.sqlArr = append(item.sqlArr, line)
+			block.sqlArr = append(block.sqlArr, line)
 		}
 	}
 }
 
 // 分析事务块
-func (p *sqlParser) analyzeBlock(blk *sqlBlock) {
-	items := make([]*sqlItem, 0, len(blk.items))
-	items = append(items, blk.items...)
-	blk.items = blk.items[0:0]
-
-	for _, item := range items {
-		sqlBytes := bytes.Join(item.sqlArr, myCnf.newLine)
-		if myCnf.reCreateTable.Match(sqlBytes) {
-			if myCnf.reCreateTableINE.Match(sqlBytes) {
-				blk.items = append(blk.items, item)
-				continue
-			}
-			p.line = item.line
+func (p *sqlParser) analyzeBlock(block *sqlBlock) {
+	sqlBytes := bytes.Join(block.sqlArr, myCnf.newLine)
+	if myCnf.reCreateTable.Match(sqlBytes) {
+		if myCnf.reCreateTableINE.Match(sqlBytes) {
+			p.blocks = append(p.blocks, block)
+		} else {
+			p.line = block.line
 			p.sql = string(sqlBytes)
 			p.err = errCreateTableINE
-			return
 		}
-
-		if myCnf.reDropTable.Match(sqlBytes) {
-			if myCnf.reDropTableIE.Match(sqlBytes) {
-				blk.items = append(blk.items, item)
-				continue
-			}
-			p.line = item.line
-			p.sql = string(sqlBytes)
-			p.err = errDropTableIE
-			return
-		}
-
-		alterArr := myCnf.reAlter.FindSubmatch(sqlBytes)
-		if len(alterArr) == 3 {
-			p.splitAlter(blk, item, alterArr)
-			if p.err != nil {
-				return
-			}
-		} else {
-			blk.items = append(blk.items, item)
-		}
+		return
 	}
 
-	p.blocks = append(p.blocks, blk)
+	if myCnf.reDropTable.Match(sqlBytes) {
+		if myCnf.reDropTableIE.Match(sqlBytes) {
+			p.blocks = append(p.blocks, block)
+		} else {
+			p.line = block.line
+			p.sql = string(sqlBytes)
+			p.err = errDropTableIE
+		}
+		return
+	}
+
+	alterArr := myCnf.reAlter.FindSubmatch(sqlBytes)
+	if len(alterArr) == 3 {
+		p.splitAlter(block, alterArr)
+		if p.err != nil {
+			return
+		}
+	} else {
+		p.blocks = append(p.blocks, block)
+	}
 }
 
 // 拆分ALTER
-func (p *sqlParser) splitAlter(blk *sqlBlock, item *sqlItem, alterArr [][]byte) {
+func (p *sqlParser) splitAlter(block *sqlBlock, alterArr [][]byte) {
 	subArr := myCnf.reAlterSub.FindAllSubmatch(alterArr[2], -1)
-	comments := item.comments
 	for idx, val := range subArr {
 		var errNum uint16
-		if idx > 0 {
-			comments = comments[0:0]
-		}
-
 		if myCnf.reAddColumn.Match(val[1]) {
 			errNum = mysqlerr.ER_DUP_FIELDNAME
 		} else if myCnf.reAddIndex.Match(val[1]) {
@@ -260,18 +192,16 @@ func (p *sqlParser) splitAlter(blk *sqlBlock, item *sqlItem, alterArr [][]byte) 
 			errNum = 1
 		}
 		if errNum == 0 {
-			p.line = item.line + idx + 1
+			p.line = block.line + idx + 1
 			p.sql = string(val[1])
 			p.err = errAlterUnknown
 			return
 		}
 
-		if errNum > 1 {
-			appendUint16Array(&blk.ignores, errNum)
-		}
-		blk.items = append(blk.items, &sqlItem{
-			line:     item.line + idx + 1,
-			comments: comments,
+		newBlk := &sqlBlock{
+			noTrans:   block.noTrans,
+			delimiter: myCnf.defaultEnd,
+			line:      block.line + idx + 1,
 			sqlArr: [][]byte{
 				bytes.Join([][]byte{
 					alterArr[1],
@@ -279,6 +209,13 @@ func (p *sqlParser) splitAlter(blk *sqlBlock, item *sqlItem, alterArr [][]byte) 
 					myCnf.defaultEnd,
 				}, myCnf.empty),
 			},
-		})
+		}
+		if idx == 0 {
+			newBlk.comments = block.comments
+		}
+		if errNum > 1 {
+			appendUint16Array(&newBlk.ignores, errNum)
+		}
+		p.blocks = append(p.blocks, newBlk)
 	}
 }

@@ -1,9 +1,10 @@
 package manager
 
 import (
-	"fmt"
 	"os"
 	"strings"
+
+	"gopkg.in/yaml.v3"
 )
 
 // ProjectInfo 项目信息
@@ -11,9 +12,9 @@ type ProjectInfo struct {
 	Version string
 	Project string
 	URI     string
-	Engine  string
 	Dir     string
-	Set     []string
+	Engine  string
+	Table   string
 }
 
 // InitProject 初始化项目
@@ -60,21 +61,18 @@ func InitProject(project *ProjectInfo) error {
 		return err
 	}
 
-	data = strings.Join([]string{
-		"[core]",
-		"	engine = " + project.Engine,
-		"",
-	}, "\n")
-	if len(project.Set) > 0 {
-		data += "[core \"variables\"]\n"
-		for _, set := range project.Set {
-			pos := strings.Index(set, "=")
-			if pos > 0 {
-				data += fmt.Sprintf("	%s = %s\n", set[0:pos], set[pos+1:])
-			}
-		}
-	}
+	bin, err := yaml.Marshal(&Config{
+		Engine:    project.Engine,
+		FromTable: project.Table,
+		LogsTable: project.Table,
 
-	err = os.WriteFile(confPath, []byte(data), os.ModePerm)
+		Rule: &Rule{
+			Database: &Database{},
+			Field:    &Field{},
+		},
+	})
+	if err == nil {
+		err = os.WriteFile(confPath, bin, os.ModePerm)
+	}
 	return err
 }

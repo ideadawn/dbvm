@@ -10,11 +10,11 @@ import (
 
 // 初始化参数
 type optionsInit struct {
-	Project string   `long:"project"`
-	URI     string   `long:"uri"`
-	Engine  string   `long:"engine"`
-	Dir     string   `long:"dir"`
-	Set     []string `long:"set"`
+	Project string `long:"project"`
+	URI     string `long:"uri"`
+	Dir     string `long:"dir"`
+	Engine  string `long:"engine"`
+	Table   string `long:"table"`
 }
 
 // 初始化项目
@@ -40,9 +40,9 @@ func cmdInit() error {
 		Version: VERSION,
 		Project: opts.Project,
 		URI:     opts.URI,
-		Engine:  opts.Engine,
 		Dir:     opts.Dir,
-		Set:     opts.Set,
+		Engine:  opts.Engine,
+		Table:   opts.Table,
 	}
 	return manager.InitProject(project)
 }

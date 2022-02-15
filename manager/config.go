@@ -39,9 +39,6 @@ type Field struct {
 type Rule struct {
 	Database *Database `yaml:"database"`
 	Field    *Field    `yaml:"field"`
-
-	NoRevert      bool `yaml:"-"`
-	NoTransaction bool `yaml:"-"`
 }
 
 // Config 数据库配置

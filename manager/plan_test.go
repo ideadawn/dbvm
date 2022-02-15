@@ -24,14 +24,12 @@ func Test_AddPlan(t *testing.T) {
 		Version: `1.0.0`,
 		Project: `test`,
 		URI:     ``,
-		Engine:  `mysql`,
 		Dir:     dir,
-		Set: []string{
-			`logsTable=dbvm`,
-		},
+		Engine:  `mysql`,
+		Table:   `dbvm_logs`,
 	}
 	err = InitProject(project)
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 
 	plan := &Plan{
 		Name:     `v1.6.0`,
@@ -42,5 +40,5 @@ func Test_AddPlan(t *testing.T) {
 		Note:     `For Test`,
 	}
 	err = AddPlan(dir, plan, project.Project, project.Engine)
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 }

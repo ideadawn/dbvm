@@ -8,6 +8,6 @@ import (
 
 func Test_ParseConfig(t *testing.T) {
 	conf, err := ParseConfig(`../testdata`)
-	assert.Equal(t, err, nil)
-	assert.Equal(t, conf.Rule.Field.Excepts[0], "TEXT")
+	assert.Equal(t, nil, err)
+	assert.Equal(t, "TEXT", conf.Rule.Field.Excepts[0])
 }

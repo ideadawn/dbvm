@@ -27,9 +27,9 @@ func Test_Help(t *testing.T) {
 	}
 
 	err := cmdHelp()
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 
 	os.Args = append(os.Args, `not_exists`)
 	err = cmdHelp()
-	assert.Equal(t, err, errCmdNotFound)
+	assert.Equal(t, errCmdNotFound, err)
 }

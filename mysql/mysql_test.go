@@ -1,8 +1,7 @@
 package mysql
 
 import (
-	"os"
-	"strings"
+	"errors"
 	"testing"
 	"time"
 
@@ -15,20 +14,12 @@ import (
 
 func Test_MySQL(t *testing.T) {
 	db, mock, err := sqlmock.New()
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 	my := New()
 	my.db = db
 	my.table = `dbvm`
 
-	plan := &manager.Plan{
-		Name:     `v1.7.0`,
-		Requires: []string{},
-		Time:     time.Now(),
-		Deploy:   `./tmp-deploy-v1.7.0.sql`,
-		Verify:   `./tmp-verify-v1.7.0.sql`,
-		Revert:   `./tmp-revert-v1.7.0.sql`,
-	}
-
+	// Initiate
 	mock.ExpectQuery("^SELECT `name` FROM `" + my.table + "` LIMIT 1$").
 		WillReturnError(&driver.MySQLError{
 			Number:  mysqlerr.ER_NO_SUCH_TABLE,
@@ -44,109 +35,113 @@ func Test_MySQL(t *testing.T) {
 			AddRow(int64(1), `v1.6.0`, int64(162), int8(2)),
 		)
 
-	mock.ExpectBegin()
-	mock.ExpectExec("^ALTER TABLE `test` ADD COLUMN `name` VARCHAR\\(32\\) NOT NULL DEFAULT '' AFTER `id`;$").
-		WillReturnError(&driver.MySQLError{
-			Number: mysqlerr.ER_DUP_FIELDNAME,
-		})
-	mock.ExpectRollback()
-	mock.ExpectBegin()
-	mock.ExpectExec("^INSERT INTO `" + my.table + "` \\(`name`,`time`,`status`\\) VALUES .*$").
-		WillReturnResult(sqlmock.NewResult(2, 1))
-	mock.ExpectCommit()
-
-	mock.ExpectBegin()
-	mock.ExpectExec("^INSERT INTO `test` \\(`name`\\) VALUES \\('test'\\);$").
-		WillReturnResult(sqlmock.NewResult(1, 1))
-	mock.ExpectRollback()
-	mock.ExpectExec("^UPDATE `"+my.table+"` SET `status` = \\? WHERE `name` = \\? LIMIT 1$").
-		WithArgs(StatusVerified, plan.Name).
-		WillReturnResult(sqlmock.NewResult(0, 1))
-
-	mock.ExpectBegin()
-	mock.ExpectExec("^ALTER TABLE `test` DROP COLUMN `name`;$").
-		WillReturnError(&driver.MySQLError{
-			Number: mysqlerr.ER_CANT_DROP_FIELD_OR_KEY,
-		})
-	mock.ExpectRollback()
-	mock.ExpectBegin()
-	mock.ExpectExec("^DELETE FROM `" + my.table + "` WHERE `name` = 'v1.7.0' LIMIT 1;$").
-		WillReturnResult(sqlmock.NewResult(0, 1))
-	mock.ExpectCommit()
-
-	mock.ExpectClose()
-
 	err = my.Initiate(my.table)
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 
 	logs, err := my.ListLogs()
-	assert.Equal(t, err, nil)
-	assert.Equal(t, logs[0].ID, int64(1))
+	assert.Equal(t, nil, err)
+	assert.Equal(t, int64(1), logs[0].ID)
 
-	err = tmpDeployFile(plan.Deploy)
-	assert.Equal(t, err, nil)
-	err = tmpRevertFile(plan.Revert)
-	assert.Equal(t, err, nil)
-	err = tmpVerifyFile(plan.Verify)
-	assert.Equal(t, err, nil)
+	plan := &manager.Plan{
+		Name:     `v1.6.0`,
+		Requires: []string{},
+		Time:     time.Now(),
+		Deploy:   `../testdata/deploy/v1.6.0.sql`,
+		Revert:   `../testdata/revert/v1.6.0.sql`,
+	}
 
+	// Deploy
+	mockDeploy(mock)
 	err = my.Deploy(plan)
-	assert.Equal(t, err, nil)
-	//err = my.Verify(plan)
-	//assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
+
+	// Revert
+	mockRevert(mock)
 	err = my.Revert(plan)
-	assert.Equal(t, err, nil)
+	assert.Equal(t, nil, err)
 
+	mock.ExpectClose()
 	my.Close()
-
-	_ = os.Remove(plan.Deploy)
-	_ = os.Remove(plan.Verify)
-	_ = os.Remove(plan.Revert)
 }
 
-func tmpDeployFile(file string) error {
-	data := []byte(strings.Join([]string{
-		"-- Deploy kc:v1.7.0 to mysql",
-		"",
-		"-- IGNORE 1060",
-		"BEGIN;",
-		"",
-		"ALTER TABLE `test` ADD COLUMN `name` VARCHAR(32) NOT NULL DEFAULT '' AFTER `id`;",
-		"",
-		"COMMIT;",
-		"",
-	}, "\n"))
+func mockDeploy(mock sqlmock.Sqlmock) {
+	result := sqlmock.NewResult(0, 0)
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)CREATE TABLE ").WillReturnError(errors.New(`Temp-DB-Error`))
+	mock.ExpectRollback()
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)CREATE TABLE ").WillReturnResult(result)
+	mock.ExpectCommit()
 
-	return os.WriteFile(file, data, os.ModePerm)
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*ADD COLUMN `phone`").WillReturnResult(result)
+	mock.ExpectCommit()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*ADD COLUMN `nickname`").WillReturnResult(result)
+	mock.ExpectCommit()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*DROP COLUMN `not_exists`").
+		WillReturnError(&driver.MySQLError{
+			Number:  mysqlerr.ER_CANT_DROP_FIELD_OR_KEY,
+			Message: `Column is not exists.`,
+		})
+	mock.ExpectRollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*ADD INDEX `phone`").WillReturnResult(result)
+	mock.ExpectCommit()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*ADD PRIMARY").
+		WillReturnError(&driver.MySQLError{
+			Number:  mysqlerr.ER_MULTIPLE_PRI_KEY,
+			Message: `Multi PRIMARY KEY.`,
+		})
+	mock.ExpectRollback()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*MODIFY COLUMN `id`").WillReturnResult(result)
+	mock.ExpectCommit()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*CHANGE COLUMN `phone`").WillReturnResult(result)
+	mock.ExpectCommit()
+
+	mock.ExpectExec("^CREATE DEFINER=`root`@`localhost` PROCEDURE `delTestById`").WillReturnResult(result)
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^CREATE DEFINER=`root`@`localhost` PROCEDURE `delTestByPhone`").WillReturnResult(result)
+	mock.ExpectCommit()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^INSERT INTO ").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
 }
 
-func tmpRevertFile(file string) error {
-	data := []byte(strings.Join([]string{
-		"-- Deploy kc:v1.7.0 to mysql",
-		"",
-		"-- IGNORE 1091",
-		"BEGIN;",
-		"",
-		"ALTER TABLE `test` DROP COLUMN `name`;",
-		"",
-		"COMMIT;",
-		"",
-	}, "\n"))
+func mockRevert(mock sqlmock.Sqlmock) {
+	result := sqlmock.NewResult(0, 0)
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*DROP COLUMN `not_exists`").WillReturnError(errors.New(`Temp-DB-Error`))
+	mock.ExpectRollback()
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*DROP COLUMN `not_exists`").WillReturnResult(result)
+	mock.ExpectCommit()
 
-	return os.WriteFile(file, data, os.ModePerm)
-}
+	mock.ExpectBegin()
+	mock.ExpectExec("^(?is)ALTER TABLE `test`.*DROP KEY `phone`").WillReturnResult(result)
+	mock.ExpectCommit()
 
-func tmpVerifyFile(file string) error {
-	data := []byte(strings.Join([]string{
-		"-- Deploy kc:v1.7.0 to mysql",
-		"",
-		"BEGIN;",
-		"",
-		"INSERT INTO `test` (`name`) VALUES ('test');",
-		"",
-		"ROLLBACK;",
-		"",
-	}, "\n"))
+	mock.ExpectBegin()
+	mock.ExpectExec("^DROP TABLE ").WillReturnResult(result)
+	mock.ExpectCommit()
 
-	return os.WriteFile(file, data, os.ModePerm)
+	mock.ExpectBegin()
+	mock.ExpectExec("^DROP PROCEDURE ").WillReturnResult(result)
+	mock.ExpectCommit()
+
+	mock.ExpectBegin()
+	mock.ExpectExec("^DELETE FROM ").WillReturnResult(sqlmock.NewResult(1, 1))
+	mock.ExpectCommit()
 }

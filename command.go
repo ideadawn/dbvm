@@ -8,6 +8,6 @@ var cmds = map[string]CmdHandler{
 	`deploy`: cmdDeploy,
 	`help`:   cmdHelp,
 	`init`:   cmdInit,
+	`print`:  cmdPrint,
 	`revert`: cmdRevert,
-	`verify`: cmdVerify,
 }

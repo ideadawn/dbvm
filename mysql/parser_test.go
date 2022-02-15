@@ -28,14 +28,6 @@ func Test_ParserIssue(t *testing.T) {
 	p.reset(dir + `alter.sql`)
 	p.parseSqlBlocks()
 	assert.Equal(t, errAlterUnknown, p.err)
-
-	p.reset(dir + `block_begin.sql`)
-	p.parseSqlBlocks()
-	assert.Equal(t, errBlockNoBegin, p.err)
-
-	p.reset(dir + `block_end.sql`)
-	p.parseSqlBlocks()
-	assert.Equal(t, errBlockNoEnd, p.err)
 }
 
 func Test_ParserDeploy(t *testing.T) {

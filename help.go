@@ -16,8 +16,8 @@ var (
 		"  deploy      Deploy changes to a database.",
 		fmt.Sprintf("  help        Display help information about %s commands.", NAME),
 		"  init        Initialize a project.",
+		"  print       Print the parsed sql script.",
 		"  revert      Revert changes from a database.",
-		"  verify      Verify changes to a database.",
 		"",
 	}, "\n")
 
@@ -55,13 +55,11 @@ var (
 		"",
 		fmt.Sprintf("%s init [options]", NAME),
 		"",
-		"  --project   Project's format must be \\w+",
+		"  --project   Project name, must be validated by [a-zA-Z0-9_]+",
 		"  --uri       Optional URI to associate with the project.",
-		"  --engine    Database driver.",
 		"  --dir       Path to the deployments files.",
-		"  --set       Set a variable name and value.",
-		"              The format must be \"name=value\".",
-		"              Variables are set in \"core.variables\".",
+		"  --engine    Database driver.",
+		"  --table     Log for deploy history.",
 		"",
 	}, "\n")
 
@@ -75,14 +73,9 @@ var (
 		"",
 	}, "\n")
 
-	usageVerify = strings.Join([]string{
+	usagePrint = strings.Join([]string{
 		"",
-		fmt.Sprintf("%s verify [options]", NAME),
-		"",
-		"  --dir       Path to the deployments files.",
-		"  --uri       Database params withing uri formed.",
-		"  --from      Verify deployment from.",
-		"  --to        Verify deployment to.",
+		fmt.Sprintf("%s print path/to/file.sql", NAME),
 		"",
 	}, "\n")
 
@@ -91,8 +84,8 @@ var (
 		`deploy`: usageDeploy,
 		`help`:   usageHelp,
 		`init`:   usageInit,
+		`print`:  usagePrint,
 		`revert`: usageRevert,
-		`verify`: usageVerify,
 	}
 )
 

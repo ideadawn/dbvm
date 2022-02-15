@@ -1,7 +1,0 @@
--- Bad Block End
-
-BEGIN;
-
-ALTER TABLE `test` ADD COLUMN `f2` INT NOT NULL DEFAULT '0';
-
-BEGIN;

@@ -1,6 +1,7 @@
 package mysql
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/ideadawn/dbvm/manager"
@@ -11,15 +12,15 @@ func (p *sqlParser) print() {
 	noTrans := string(manager.MagicNoTrans)
 	ignore := string(manager.MagicIgnore)
 
-	for _, blk := range p.blocks {
-		for _, cmmt := range blk.comments {
+	for _, block := range p.blocks {
+		for _, cmmt := range block.comments {
 			fmt.Println(string(cmmt))
 		}
-		if blk.noTrans {
+		if block.noTrans {
 			fmt.Println(string(myCnf.commentBegin), noTrans)
 		}
-		if len(blk.ignores) > 0 {
-			for idx, val := range blk.ignores {
+		if len(block.ignores) > 0 {
+			for idx, val := range block.ignores {
 				if idx == 0 {
 					fmt.Printf("%s %s %d", myCnf.commentBegin, ignore, val)
 				} else {
@@ -28,27 +29,31 @@ func (p *sqlParser) print() {
 			}
 			fmt.Printf(string(myCnf.newLine))
 		}
-		if blk.inBlock {
-			fmt.Println(string(myCnf.blockBegin))
+		delimiter := len(block.delimiter) > 0 && bytes.Compare(block.delimiter, myCnf.defaultEnd) != 0
+		if delimiter {
+			fmt.Println(string(myCnf.delimiter), string(block.delimiter))
 		}
-		if len(blk.delimiter) > 0 {
-			fmt.Println(string(myCnf.delimiter), string(blk.delimiter))
+		for _, sql := range block.sqlArr {
+			fmt.Println(string(sql))
 		}
-		for _, itm := range blk.items {
-			for _, cmmt := range itm.comments {
-				fmt.Println(string(cmmt))
-			}
-			for _, sql := range itm.sqlArr {
-				fmt.Println(string(sql))
-			}
-		}
-		if len(blk.delimiter) > 0 {
-			fmt.Println(string(blk.delimiter))
+		if delimiter {
+			fmt.Println(string(block.delimiter))
 			fmt.Println(string(myCnf.delimiter), string(myCnf.defaultEnd))
-		}
-		if blk.inBlock {
-			fmt.Println(string(myCnf.blockCommit))
 		}
 	}
 	fmt.Println("")
+}
+
+// Print 打印解析后的脚本
+func Print(path string) error {
+	parser := &sqlParser{
+		file: path,
+	}
+	parser.parseSqlBlocks()
+	if parser.err != nil {
+		return parser
+	}
+
+	parser.print()
+	return nil
 }
