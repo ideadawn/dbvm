@@ -17,7 +17,6 @@ type mysqlConfig struct {
 	blockCommit  []byte
 
 	reAlter        *regexp.Regexp
-	reAlterSub     *regexp.Regexp
 	reAddColumn    *regexp.Regexp
 	reAddPrimary   *regexp.Regexp
 	reAddIndex     *regexp.Regexp
@@ -43,11 +42,10 @@ var myCnf = &mysqlConfig{
 	blockBegin:   []byte(`BEGIN;`),
 	blockCommit:  []byte(`COMMIT;`),
 
-	reAlter:        regexp.MustCompile("(?is)(ALTER[ \t\n]+TABLE.*?)((?:ADD|CHANGE|MODIFY|DROP).*)"),
-	reAlterSub:     regexp.MustCompile("(?is)((?:ADD|CHANGE|MODIFY|DROP)[ \t\n]+(?:COLUMN|INDEX|KEY|PRIMARY|UNIQUE).*?(?:,[ \t\n]+|;|$))"),
+	reAlter:        regexp.MustCompile("^(?is)[ \t\n]*(ALTER[ \t\n]+TABLE.*?)([ \t]+(?:ADD|CHANGE|MODIFY|DROP).*)"),
 	reAddColumn:    regexp.MustCompile("^(?is)[ \t\n]*ADD[ \t\n]+COLUMN"),
 	reAddPrimary:   regexp.MustCompile("^(?is)[ \t\n]*ADD[ \t\n]+PRIMARY"),
-	reAddIndex:     regexp.MustCompile("^(?is)[ \t\n]*ADD[ \t\n]+(?:UNIQUE[ \t\n]+)?(?:INDEX|KEY)"),
+	reAddIndex:     regexp.MustCompile("^(?is)[ \t\n]*ADD[ \t\n]+(?:(?:UNIQUE[ \t\n]+)?(?:INDEX|KEY)|UNIQUE[ \t\n]+(?:INDEX|KEY)?)"),
 	reDropColumn:   regexp.MustCompile("^(?is)[ \t\n]*DROP[ \t\n]+(?:COLUMN|INDEX|KEY|PRIMARY)"),
 	reChangeColumn: regexp.MustCompile("^(?is)[ \t\n]*CHANGE[ \t\n]+COLUMN"),
 	reModifyColumn: regexp.MustCompile("^(?is)[ \t\n]*MODIFY[ \t\n]+COLUMN"),

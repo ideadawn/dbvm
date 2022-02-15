@@ -3,18 +3,18 @@
 
 -- Create Table
 CREATE TABLE IF NOT EXISTS `test` (
-	`id` INT(10) NOT NULL AUTO_INCREMENT COMMENT '自增ID',
+	`id` INT(10) NOT NULL AUTO_INCREMENT COMMENT '自增\'ID',
 	PRIMARY KEY (`id`) USING BTREE
-) COMMENT='测试' COLLATE='utf8mb4_bin' ENGINE=InnoDB;
+) COMMENT="测\"试" COLLATE='utf8mb4_bin' ENGINE=InnoDB;
 
--- Multi Sql Blocks
+-- Ignore is unusable on ALTER
 -- IGNORE 1060
 ALTER TABLE `test`
-	ADD COLUMN `phone` VARCHAR(20) NOT NULL DEFAULT '' COLLATE 'ascii_bin' COMMENT '手机号',
-	ADD COLUMN `nickname` VARCHAR(32) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin' COMMENT '昵称',
+	ADD COLUMN `phone` VARCHAR(20) NOT NULL DEFAULT '' COLLATE 'ascii_bin' COMMENT '手机号, (11位)',
+	ADD COLUMN `nickname` VARCHAR(32) NOT NULL DEFAULT '' COLLATE 'utf8mb4_bin' COMMENT "昵称';",
 	DROP COLUMN `not_exists`,
 	ADD INDEX `phone` (`phone`),
-	ADD PRIMARY KEY (`id`);
+	ADD PRIMARY KEY (`id`, `phone`);
 
 ALTER TABLE `test`
 	MODIFY COLUMN `id` INT(10) UNSIGNED NOT NULL AUTO_INCREMENT COMMENT '自增ID',

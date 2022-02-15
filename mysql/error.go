@@ -10,7 +10,7 @@ var (
 	errTableNotInit  = errors.New(`Log table was not initiated.`)
 	errDeployNothing = errors.New(`There is nothing to deploy.`)
 
-	// errMultiBytes = errors.New(`Syntax Error: Multi bytes charactor in sql.`)
+	errSyntaxError = errors.New(`Syntax error, Multi bytes charactor in sql.`)
 	// errNoNotNull  = errors.New(`"NOT NULL" is necessary.`)
 	// errNoDefault  = errors.New(`"DEFAULT" is necessary.`)
 

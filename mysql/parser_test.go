@@ -28,6 +28,10 @@ func Test_ParserIssue(t *testing.T) {
 	p.reset(dir + `alter.sql`)
 	p.parseSqlBlocks()
 	assert.Equal(t, errAlterUnknown, p.err)
+
+	p.reset(dir + `alter_syntax.sql`)
+	p.parseSqlBlocks()
+	assert.Equal(t, errSyntaxError, p.err)
 }
 
 func Test_ParserDeploy(t *testing.T) {

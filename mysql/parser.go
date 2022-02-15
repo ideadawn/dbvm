@@ -142,7 +142,7 @@ func (p *sqlParser) analyzeBlock(block *sqlBlock) {
 	sqlBytes := bytes.Join(block.sqlArr, myCnf.newLine)
 	if myCnf.reCreateTable.Match(sqlBytes) {
 		if myCnf.reCreateTableINE.Match(sqlBytes) {
-			p.blocks = append(p.blocks, block)
+			p.analyzeSyntax(block)
 		} else {
 			p.line = block.line
 			p.sql = string(sqlBytes)
@@ -153,7 +153,7 @@ func (p *sqlParser) analyzeBlock(block *sqlBlock) {
 
 	if myCnf.reDropTable.Match(sqlBytes) {
 		if myCnf.reDropTableIE.Match(sqlBytes) {
-			p.blocks = append(p.blocks, block)
+			p.analyzeSyntax(block)
 		} else {
 			p.line = block.line
 			p.sql = string(sqlBytes)
@@ -169,31 +169,106 @@ func (p *sqlParser) analyzeBlock(block *sqlBlock) {
 			return
 		}
 	} else {
-		p.blocks = append(p.blocks, block)
+		p.analyzeSyntax(block)
 	}
 }
 
 // 拆分ALTER
 func (p *sqlParser) splitAlter(block *sqlBlock, alterArr [][]byte) {
-	subArr := myCnf.reAlterSub.FindAllSubmatch(alterArr[2], -1)
-	for idx, val := range subArr {
-		var errNum uint16
-		if myCnf.reAddColumn.Match(val[1]) {
+	var end byte
+	var backslash int = -1
+	var subArr [][]byte
+	var current []byte
+	idx := 1
+	for pos, v := range alterArr[2] {
+		if v > 127 && (end == 0 || end == ')') {
+			p.line = block.line + idx
+			p.sql = string(alterArr[2])
+			p.err = errSyntaxError
+			return
+		}
+		current = append(current, v)
+		switch v {
+		case '\\':
+			if backslash == -1 {
+				backslash = pos
+			} else if backslash == pos-1 {
+				backslash = -1
+			}
+		case '\'':
+			if end == 0 {
+				end = '\''
+			} else if backslash != -1 && backslash != pos-1 {
+				end = 0
+			} else if backslash == pos-1 {
+				backslash = -1
+			}
+		case '"':
+			if end == 0 {
+				end = '"'
+			} else if backslash != -1 && backslash != pos-1 {
+				end = 0
+			} else if backslash == pos-1 {
+				backslash = -1
+			}
+		case '`':
+			if end == 0 {
+				end = '`'
+			} else if end == '`' {
+				end = 0
+			}
+		case '(':
+			if end == 0 {
+				end = ')'
+			}
+		case ')':
+			if end == ')' {
+				end = 0
+			}
+		case ',':
+			fallthrough
+		case ';':
+			if end == 0 {
+				tmp := bytes.TrimSpace(current)
+				if len(tmp) > 0 {
+					cpy := make([]byte, 0, len(current))
+					tmp = bytes.TrimRight(current, " \t\n")
+					tmp = bytes.TrimLeft(tmp, "\n")
+					cpy = append(cpy, tmp...)
+					subArr = append(subArr, cpy)
+				}
+				current = current[0:0]
+			}
+		case '\n':
+			idx++
+		}
+	}
+	tmp := bytes.TrimSpace(current)
+	if len(tmp) > 0 {
+		tmp = bytes.TrimRight(current, " \t\n")
+		tmp = bytes.TrimLeft(tmp, "\n")
+		subArr = append(subArr, tmp)
+	}
+
+	var errNum uint16
+	for idx, sub := range subArr {
+		errNum = 0
+		if myCnf.reAddColumn.Match(sub) {
 			errNum = mysqlerr.ER_DUP_FIELDNAME
-		} else if myCnf.reAddIndex.Match(val[1]) {
+		} else if myCnf.reAddIndex.Match(sub) {
 			errNum = mysqlerr.ER_DUP_KEYNAME
-		} else if myCnf.reAddPrimary.Match(val[1]) {
+		} else if myCnf.reAddPrimary.Match(sub) {
 			errNum = mysqlerr.ER_MULTIPLE_PRI_KEY
-		} else if myCnf.reChangeColumn.Match(val[1]) {
+		} else if myCnf.reChangeColumn.Match(sub) {
 			errNum = mysqlerr.ER_BAD_FIELD_ERROR
-		} else if myCnf.reDropColumn.Match(val[1]) {
+		} else if myCnf.reDropColumn.Match(sub) {
 			errNum = mysqlerr.ER_CANT_DROP_FIELD_OR_KEY
-		} else if myCnf.reModifyColumn.Match(val[1]) {
+		} else if myCnf.reModifyColumn.Match(sub) {
 			errNum = 1
 		}
 		if errNum == 0 {
 			p.line = block.line + idx + 1
-			p.sql = string(val[1])
+			p.sql = string(sub)
 			p.err = errAlterUnknown
 			return
 		}
@@ -205,7 +280,7 @@ func (p *sqlParser) splitAlter(block *sqlBlock, alterArr [][]byte) {
 			sqlArr: [][]byte{
 				bytes.Join([][]byte{
 					alterArr[1],
-					bytes.TrimRight(val[1], ",; \t\n"),
+					bytes.TrimRight(sub, ",; \t\n"),
 					myCnf.defaultEnd,
 				}, myCnf.empty),
 			},
@@ -218,4 +293,37 @@ func (p *sqlParser) splitAlter(block *sqlBlock, alterArr [][]byte) {
 		}
 		p.blocks = append(p.blocks, newBlk)
 	}
+}
+
+// 分析是否存在语法错误
+func (p *sqlParser) analyzeSyntax(block *sqlBlock) {
+	var end byte
+	var backslash int = -1
+	for idx, sub := range block.sqlArr {
+		for pos, v := range sub {
+			if v > 127 && end == 0 {
+				p.line = block.line + idx + 1
+				p.sql = string(sub)
+				p.err = errSyntaxError
+				return
+			}
+			switch v {
+			case '\\':
+				backslash = pos
+			case '\'':
+				if end == 0 {
+					end = '\''
+				} else if backslash != pos-1 {
+					end = 0
+				}
+			case '"':
+				if end == 0 {
+					end = '"'
+				} else if backslash != pos-1 {
+					end = 0
+				}
+			}
+		}
+	}
+	p.blocks = append(p.blocks, block)
 }
