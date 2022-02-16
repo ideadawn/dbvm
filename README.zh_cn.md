@@ -9,4 +9,4 @@
 
 #### 如何使用部署工具？
 
-> # dbvm help
+> dbvm help

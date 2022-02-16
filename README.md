@@ -9,4 +9,4 @@
 
 #### How to use the tool ?
 
-> # dbvm help
+> dbvm help
