@@ -198,18 +198,18 @@ func (p *sqlParser) splitAlter(block *sqlBlock, alterArr [][]byte) {
 		case '\'':
 			if end == 0 {
 				end = '\''
-			} else if backslash != -1 && backslash != pos-1 {
-				end = 0
 			} else if backslash == pos-1 {
 				backslash = -1
+			} else if end == '\'' && backslash != pos-1 {
+				end = 0
 			}
 		case '"':
 			if end == 0 {
 				end = '"'
-			} else if backslash != -1 && backslash != pos-1 {
-				end = 0
 			} else if backslash == pos-1 {
 				backslash = -1
+			} else if end == '"' && backslash != pos-1 {
+				end = 0
 			}
 		case '`':
 			if end == 0 {
