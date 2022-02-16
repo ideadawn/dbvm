@@ -24,6 +24,7 @@ ALTER TABLE `test`
 DELIMITER //
 
 -- NO-TRANS
+DROP PROCEDURE IF EXISTS `delTestById`//
 CREATE DEFINER=`root`@`localhost` PROCEDURE `delTestById`(
 	IN `id` INT
 )
@@ -36,6 +37,7 @@ BEGIN
   DELETE FROM `test` WHERE `id` = id;
 END//
 
+DROP PROCEDURE IF EXISTS `delTestByPhone`//
 CREATE DEFINER=`root`@`localhost` PROCEDURE `delTestByPhone`(
 	IN `phone` VARCHAR(20)
 )
