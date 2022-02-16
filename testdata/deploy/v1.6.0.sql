@@ -25,6 +25,8 @@ DELIMITER //
 
 -- NO-TRANS
 DROP PROCEDURE IF EXISTS `delTestById`//
+
+-- NO-TRANS
 CREATE DEFINER=`root`@`localhost` PROCEDURE `delTestById`(
 	IN `id` INT
 )

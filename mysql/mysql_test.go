@@ -109,8 +109,12 @@ func mockDeploy(mock sqlmock.Sqlmock) {
 	mock.ExpectExec("^(?is)ALTER TABLE `test`.*CHANGE COLUMN `phone`").WillReturnResult(result)
 	mock.ExpectCommit()
 
+	mock.ExpectExec("^DROP PROCEDURE IF EXISTS `delTestById`").WillReturnResult(result)
 	mock.ExpectExec("^CREATE DEFINER=`root`@`localhost` PROCEDURE `delTestById`").WillReturnResult(result)
 
+	mock.ExpectBegin()
+	mock.ExpectExec("^DROP PROCEDURE IF EXISTS `delTestByPhone`").WillReturnResult(result)
+	mock.ExpectCommit()
 	mock.ExpectBegin()
 	mock.ExpectExec("^CREATE DEFINER=`root`@`localhost` PROCEDURE `delTestByPhone`").WillReturnResult(result)
 	mock.ExpectCommit()
