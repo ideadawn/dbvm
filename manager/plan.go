@@ -38,7 +38,7 @@ func ParsePlan(dir string) (map[string]string, []*Plan, error) {
 	var list []*Plan
 	env := map[string]string{}
 
-	re_plan := regexp.MustCompile(`^([^ ]+) (?:\[(.+)\] )?([0-9\-T:Z]{20}) \w+ <.*> #(.*)$`)
+	re_plan := regexp.MustCompile(`^([^ ]+) (?:\[([^\]]+)\] )?([0-9\-T:Z]{20}) \w+ <[^>]*> #(.*)$`)
 	lines := bytes.Split(data, []byte{'\n'})
 	for _, line := range lines {
 		line = bytes.Trim(line, " \r\n\t")

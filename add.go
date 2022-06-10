@@ -34,7 +34,7 @@ func cmdAdd() error {
 		return errArgsNotEnough
 	}
 
-	reVersion := regexp.MustCompile(`^v?\d+\.\d+\.\d+$`)
+	reVersion := regexp.MustCompile(`^v?(?:\d+\.){2,3}\d+$`)
 	if !reVersion.Match([]byte(opts.Name)) {
 		fmt.Print(usageAdd)
 		return errArgInvalid

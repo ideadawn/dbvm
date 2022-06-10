@@ -25,7 +25,7 @@ var (
 		"",
 		fmt.Sprintf("%s add [options]", NAME),
 		"",
-		"  --name      Name's format must be [v]1.0.0",
+		"  --name      Name's format must be [v]1.0.0[.0]",
 		"  --dir       Path to the deployments files.",
 		"  --require   Name of change that is required by new change.",
 		"  --user      Who make the change.",
